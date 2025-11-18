@@ -1,0 +1,86 @@
+name: Chaos Testing
+
+on:
+  schedule:
+    # Run chaos tests nightly at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    # Allow manual trigger
+
+jobs:
+  chaos-test:
+    name: Chaos Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache: true
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+      - name: Generate protobuf code
+        run: |
+          export PATH=$PATH:$(go env GOPATH)/bin
+          make proto
+
+      - name: Run chaos tests
+        run: go test -v -tags=chaos -timeout=50m ./test/chaos/...
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chaos-test-results
+          path: |
+            test-results/
+            *.log
+
+  long-running-test:
+    name: Long Running Stress Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache: true
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+      - name: Generate protobuf code
+        run: |
+          export PATH=$PATH:$(go env GOPATH)/bin
+          make proto
+
+      - name: Run long stress test
+        run: go test -v -tags=e2e -run=TestE2E_LongRunningStressTest -timeout=80m ./test/e2e/...
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stress-test-results
+          path: |
+            test-results/
+            *.log
