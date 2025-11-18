@@ -332,4 +332,14 @@ func (n *Node) becomeLeader() {
 	go n.startReplication()
 }
 
+// GetLog returns a copy of the log
+func (n *Node) GetLog() []LogEntry {
+	return n.serverState.GetLog()
+}
+
+// AppendLog appends a log entry (for testing purposes)
+func (n *Node) AppendLog(entry *LogEntry) {
+	n.serverState.AppendEntry(*entry)
+}
+
 // RPC Handler implementations are in rpc_handlers.go
