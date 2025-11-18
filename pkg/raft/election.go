@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/therealutkarshpriyadarshi/keyval/proto"
+	raftpb "github.com/therealutkarshpriyadarshi/keyval/proto"
 )
 
 // startElection initiates a new election

@@ -3,7 +3,7 @@ package raft
 import (
 	"context"
 
-	"github.com/therealutkarshpriyadarshi/keyval/proto"
+	raftpb "github.com/therealutkarshpriyadarshi/keyval/proto"
 )
 
 // HandleRequestVote handles RequestVote RPC

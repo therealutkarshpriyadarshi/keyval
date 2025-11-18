@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/therealutkarshpriyadarshi/keyval/proto"
+	raftpb "github.com/therealutkarshpriyadarshi/keyval/proto"
 )
 
 // Log provides thread-safe access to the Raft log

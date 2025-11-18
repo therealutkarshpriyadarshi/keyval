@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/therealutkarshpriyadarshi/keyval/pkg/storage"
-	"github.com/therealutkarshpriyadarshi/keyval/proto"
+	raftpb "github.com/therealutkarshpriyadarshi/keyval/proto"
 )
 
 // InstallSnapshot handles the InstallSnapshot RPC
