@@ -7,6 +7,7 @@ import (
 
 	"github.com/therealutkarshpriyadarshi/keyval/pkg/rpc"
 	"github.com/therealutkarshpriyadarshi/keyval/pkg/statemachine"
+	"github.com/therealutkarshpriyadarshi/keyval/pkg/storage"
 )
 
 // Node represents a Raft node
@@ -47,6 +48,12 @@ type Node struct {
 
 	// State machine
 	stateMachine statemachine.StateMachine
+
+	// Snapshot writer for receiving snapshots (volatile state)
+	snapshotWriter *storage.SnapshotWriter
+
+	// Lease manager for optimized reads (leader only)
+	leaseManager *LeaseManager
 
 	// Channels for communication
 	stopCh chan struct{}
@@ -330,6 +337,24 @@ func (n *Node) becomeLeader() {
 
 	// Start log replication
 	go n.startReplication()
+}
+
+// becomeFollower transitions to follower state
+// Must be called with lock held
+func (n *Node) becomeFollower(term uint64) {
+	// Stop heartbeat timer if we're currently a leader
+	if n.state == Leader && n.heartbeatTimer != nil {
+		go n.stopHeartbeatTimer()
+	}
+
+	// Update term if necessary
+	if term > n.serverState.GetCurrentTerm() {
+		n.serverState.SetCurrentTerm(term)
+		n.serverState.SetVotedFor("")
+	}
+
+	n.setState(Follower)
+	n.logger.Printf("[INFO] Node %s became follower for term %d", n.id, term)
 }
 
 // GetLog returns a copy of the log

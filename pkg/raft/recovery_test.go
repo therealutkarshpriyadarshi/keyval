@@ -1,7 +1,6 @@
 package raft
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -107,8 +106,8 @@ func TestRecoveryManager_ValidateSnapshot(t *testing.T) {
 
 	// Valid snapshot
 	validSnapshot := &storage.SnapshotMetadata{
-		LastIncludedIndex: 100,
-		LastIncludedTerm:  5,
+		Index: 100,
+		Term:  5,
 		Size:              1024,
 	}
 
@@ -118,8 +117,8 @@ func TestRecoveryManager_ValidateSnapshot(t *testing.T) {
 
 	// Invalid snapshot - zero index
 	invalidSnapshot1 := &storage.SnapshotMetadata{
-		LastIncludedIndex: 0,
-		LastIncludedTerm:  5,
+		Index: 0,
+		Term:  5,
 		Size:              1024,
 	}
 
@@ -129,8 +128,8 @@ func TestRecoveryManager_ValidateSnapshot(t *testing.T) {
 
 	// Invalid snapshot - zero size
 	invalidSnapshot2 := &storage.SnapshotMetadata{
-		LastIncludedIndex: 100,
-		LastIncludedTerm:  5,
+		Index: 100,
+		Term:  5,
 		Size:              0,
 	}
 

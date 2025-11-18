@@ -158,7 +158,7 @@ func (s *Server) HandleBatch(req *BatchRequest) *BatchResponse {
 // processBatchWrites processes a batch of write operations
 func (s *Server) processBatchWrites(writes []Operation, timeout time.Duration) ([]OperationResult, error) {
 	if !s.raftNode.IsLeader() {
-		return nil, fmt.Errorf(ErrNotLeader)
+		return nil, fmt.Errorf(ErrCodeNotLeader)
 	}
 
 	// Create batch command
@@ -193,7 +193,7 @@ func (s *Server) processBatchWrites(writes []Operation, timeout time.Duration) (
 	// Append to Raft log
 	index, isLeader := s.raftNode.AppendLogEntry(data, raft.EntryBatch)
 	if !isLeader {
-		return nil, fmt.Errorf(ErrNotLeader)
+		return nil, fmt.Errorf(ErrCodeNotLeader)
 	}
 
 	// Wait for commit
@@ -203,7 +203,7 @@ func (s *Server) processBatchWrites(writes []Operation, timeout time.Duration) (
 
 	committed := s.waitForCommit(index, timeout)
 	if !committed {
-		return nil, fmt.Errorf(ErrTimeout)
+		return nil, fmt.Errorf(ErrCodeTimeout)
 	}
 
 	// Create success results for each write
@@ -226,7 +226,7 @@ func (s *Server) processBatchReads(reads []Operation) []OperationResult {
 		if !exists {
 			results[i] = OperationResult{
 				Success: false,
-				Error:   ErrKeyNotFound,
+				Error:   ErrCodeKeyNotFound,
 			}
 		} else {
 			results[i] = OperationResult{
@@ -273,7 +273,7 @@ func (s *Server) redirectBatchToLeader() *BatchResponse {
 
 	return &BatchResponse{
 		Success:  false,
-		Error:    ErrNotLeader,
+		Error:    ErrCodeNotLeader,
 		LeaderID: leaderID,
 	}
 }
