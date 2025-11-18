@@ -34,6 +34,9 @@ type Node struct {
 	// Election timer
 	electionTimer *ElectionTimer
 
+	// Heartbeat timer (only active for leaders)
+	heartbeatTimer *HeartbeatTimer
+
 	// Election state (only valid during elections)
 	electionState *ElectionState
 
@@ -131,6 +134,9 @@ func (n *Node) Start() error {
 
 	// Start election timer
 	n.electionTimer.Start()
+
+	// Start apply loop for committing entries
+	n.startApplyLoop()
 
 	// Start main loop
 	go n.run()
@@ -263,6 +269,11 @@ func (n *Node) GetID() string {
 // stepDown steps down from candidate or leader to follower
 // Must be called with lock held
 func (n *Node) stepDown(newTerm uint64) {
+	// If we're stepping down from leader, stop heartbeat timer
+	if n.state == Leader {
+		go n.stopHeartbeatTimer()
+	}
+
 	if newTerm > n.serverState.GetCurrentTerm() {
 		n.serverState.SetCurrentTerm(newTerm)
 		n.serverState.SetVotedFor("")
@@ -295,8 +306,18 @@ func (n *Node) becomeLeader() {
 	n.setState(Leader)
 	n.logger.Printf("[INFO] Node %s became leader for term %d", n.id, n.serverState.GetCurrentTerm())
 
-	// TODO: Send initial heartbeats to all peers
-	// TODO: Append a no-op entry to the log
+	// Append a no-op entry to commit entries from previous terms
+	// This is important for the Raft safety property (§5.4.2 and §8)
+	go n.appendNoOpEntry()
+
+	// Start sending heartbeats
+	go n.startHeartbeatTimer()
+
+	// Send initial heartbeat immediately to establish leadership
+	go n.sendHeartbeats()
+
+	// Start log replication
+	go n.startReplication()
 }
 
 // RPC Handler implementations are in rpc_handlers.go
