@@ -58,11 +58,26 @@ type Metadata struct {
 
 // SnapshotMetadata represents snapshot information
 type SnapshotMetadata struct {
-	LastIncludedIndex uint64
-	LastIncludedTerm  uint64
-	Size              int64
-	Checksum          uint32
-	Timestamp         time.Time
+	// Index is the last included index in the snapshot (replaces LastIncludedIndex)
+	Index uint64 `json:"index"`
+
+	// Term is the term of the last included index (replaces LastIncludedTerm)
+	Term uint64 `json:"term"`
+
+	// Configuration is the cluster configuration at this point
+	Configuration []byte `json:"configuration,omitempty"`
+
+	// Size is the size of the snapshot data in bytes
+	Size int64 `json:"size"`
+
+	// Checksum is the SHA-256 checksum of the snapshot data (stored as string for JSON)
+	Checksum string `json:"checksum"`
+
+	// ChecksumCRC32 is the CRC32 checksum (for backwards compatibility)
+	ChecksumCRC32 uint32 `json:"checksum_crc32,omitempty"`
+
+	// CreatedAt is when the snapshot was created (replaces Timestamp)
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // WAL interface defines write-ahead log operations

@@ -289,10 +289,11 @@ func TestBoltStore_SaveAndLoadSnapshot(t *testing.T) {
 
 	// Save snapshot metadata
 	meta := &SnapshotMetadata{
-		LastIncludedIndex: 100,
-		LastIncludedTerm:  5,
-		Size:              1024,
-		Checksum:          12345,
+		Index:         100,
+		Term:          5,
+		Size:          1024,
+		Checksum:      "abcdef1234567890",
+		ChecksumCRC32: 12345,
 	}
 
 	if err := store.SaveSnapshot(meta); err != nil {
@@ -305,14 +306,14 @@ func TestBoltStore_SaveAndLoadSnapshot(t *testing.T) {
 		t.Fatalf("Failed to load snapshot: %v", err)
 	}
 
-	if loadedMeta.LastIncludedIndex != meta.LastIncludedIndex {
-		t.Errorf("Expected lastIncludedIndex %d, got %d",
-			meta.LastIncludedIndex, loadedMeta.LastIncludedIndex)
+	if loadedMeta.Index != meta.Index {
+		t.Errorf("Expected index %d, got %d",
+			meta.Index, loadedMeta.Index)
 	}
 
-	if loadedMeta.LastIncludedTerm != meta.LastIncludedTerm {
-		t.Errorf("Expected lastIncludedTerm %d, got %d",
-			meta.LastIncludedTerm, loadedMeta.LastIncludedTerm)
+	if loadedMeta.Term != meta.Term {
+		t.Errorf("Expected term %d, got %d",
+			meta.Term, loadedMeta.Term)
 	}
 }
 
