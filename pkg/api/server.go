@@ -105,7 +105,7 @@ func (s *Server) handleGet(req *Request) *Response {
 	if !exists {
 		return &Response{
 			Success: false,
-			Error:   ErrKeyNotFound,
+			Error:   ErrCodeKeyNotFound,
 		}
 	}
 
@@ -154,7 +154,7 @@ func (s *Server) handlePut(req *Request) *Response {
 	if !committed {
 		return &Response{
 			Success: false,
-			Error:   ErrTimeout,
+			Error:   ErrCodeTimeout,
 		}
 	}
 
@@ -202,7 +202,7 @@ func (s *Server) handleDelete(req *Request) *Response {
 	if !committed {
 		return &Response{
 			Success: false,
-			Error:   ErrTimeout,
+			Error:   ErrCodeTimeout,
 		}
 	}
 
@@ -235,7 +235,7 @@ func (s *Server) redirectToLeader() *Response {
 
 	return &Response{
 		Success:   false,
-		Error:     ErrNotLeader,
+		Error:     ErrCodeNotLeader,
 		LeaderID:  leaderID,
 		// LeaderAddress would be populated if we track peer addresses
 	}

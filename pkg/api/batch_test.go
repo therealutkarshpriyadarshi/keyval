@@ -116,7 +116,7 @@ func TestBatchResponse_Structure(t *testing.T) {
 		Results: []OperationResult{
 			{Success: true, Value: []byte("value1")},
 			{Success: true, Value: []byte("value2")},
-			{Success: false, Error: ErrKeyNotFound},
+			{Success: false, Error: ErrCodeKeyNotFound},
 		},
 	}
 
@@ -141,15 +141,15 @@ func TestBatchResponse_Structure(t *testing.T) {
 		t.Error("expected result 2 to fail")
 	}
 
-	if resp.Results[2].Error != ErrKeyNotFound {
-		t.Errorf("expected error %s, got %s", ErrKeyNotFound, resp.Results[2].Error)
+	if resp.Results[2].Error != ErrCodeKeyNotFound {
+		t.Errorf("expected error %s, got %s", ErrCodeKeyNotFound, resp.Results[2].Error)
 	}
 }
 
 func TestConvertToBatchResponse(t *testing.T) {
 	resp := &Response{
 		Success:       false,
-		Error:         ErrNotLeader,
+		Error:         ErrCodeNotLeader,
 		LeaderID:      "node-2",
 		LeaderAddress: "localhost:8002",
 	}

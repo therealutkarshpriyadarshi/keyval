@@ -185,8 +185,8 @@ func (p *PersistenceLayer) PersistSnapshot(meta *storage.SnapshotMetadata) error
 
 	walEntry := &storage.WALEntry{
 		Type:  storage.WALEntrySnapshot,
-		Index: meta.LastIncludedIndex,
-		Term:  meta.LastIncludedTerm,
+		Index: meta.Index,
+		Term:  meta.Term,
 		Data:  data,
 	}
 

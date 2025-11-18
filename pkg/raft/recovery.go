@@ -33,8 +33,8 @@ func (r *RecoveryManager) RecoverState(node *Node) error {
 	log.Printf("Recovered metadata: term=%d, votedFor=%s", currentTerm, votedFor)
 
 	// Set recovered metadata
-	node.state.SetCurrentTerm(currentTerm)
-	node.state.SetVotedFor(votedFor)
+	node.serverState.SetCurrentTerm(currentTerm)
+	node.serverState.SetVotedFor(votedFor)
 
 	// Step 2: Recover log entries
 	entries, err := r.persistence.LoadLogEntries()
@@ -45,12 +45,12 @@ func (r *RecoveryManager) RecoverState(node *Node) error {
 	log.Printf("Recovered %d log entries", len(entries))
 
 	// Restore log entries
-	node.state.mu.Lock()
-	node.state.Log = make([]LogEntry, len(entries))
+	node.serverState.mu.Lock()
+	node.serverState.Log = make([]LogEntry, len(entries))
 	for i, entry := range entries {
-		node.state.Log[i] = *entry
+		node.serverState.Log[i] = *entry
 	}
-	node.state.mu.Unlock()
+	node.serverState.mu.Unlock()
 
 	// Step 3: Check for snapshot and recover if exists
 	snapshot, err := r.persistence.LoadSnapshot()
@@ -60,7 +60,7 @@ func (r *RecoveryManager) RecoverState(node *Node) error {
 
 	if snapshot != nil {
 		log.Printf("Found snapshot: lastIncludedIndex=%d, lastIncludedTerm=%d",
-			snapshot.LastIncludedIndex, snapshot.LastIncludedTerm)
+			snapshot.Index, snapshot.Term)
 
 		// Validate snapshot
 		if err := r.validateSnapshot(snapshot); err != nil {
@@ -84,7 +84,7 @@ func (r *RecoveryManager) RecoverState(node *Node) error {
 
 // validateSnapshot validates snapshot metadata
 func (r *RecoveryManager) validateSnapshot(snapshot *storage.SnapshotMetadata) error {
-	if snapshot.LastIncludedIndex == 0 {
+	if snapshot.Index == 0 {
 		return fmt.Errorf("invalid snapshot: lastIncludedIndex is 0")
 	}
 
@@ -101,12 +101,12 @@ func (r *RecoveryManager) validateSnapshot(snapshot *storage.SnapshotMetadata) e
 // validateRecoveredState validates the recovered Raft state
 func (r *RecoveryManager) validateRecoveredState(node *Node) error {
 	// Validate log indices are sequential
-	node.state.mu.RLock()
-	defer node.state.mu.RUnlock()
+	node.serverState.mu.RLock()
+	defer node.serverState.mu.RUnlock()
 
-	if len(node.state.Log) > 0 {
+	if len(node.serverState.Log) > 0 {
 		expectedIndex := uint64(1)
-		for i, entry := range node.state.Log {
+		for i, entry := range node.serverState.Log {
 			if entry.Index != expectedIndex {
 				return fmt.Errorf("log entry %d has index %d, expected %d",
 					i, entry.Index, expectedIndex)
@@ -115,7 +115,7 @@ func (r *RecoveryManager) validateRecoveredState(node *Node) error {
 		}
 	}
 
-	log.Printf("State validation passed: %d log entries", len(node.state.Log))
+	log.Printf("State validation passed: %d log entries", len(node.serverState.Log))
 	return nil
 }
 
@@ -165,15 +165,15 @@ func (r *RecoveryManager) CreateCheckpoint(node *Node) error {
 	log.Println("Creating state checkpoint...")
 
 	// Save current metadata
-	currentTerm := node.state.GetCurrentTerm()
-	votedFor := node.state.GetVotedFor()
+	currentTerm := node.serverState.GetCurrentTerm()
+	votedFor := node.serverState.GetVotedFor()
 
 	if err := r.persistence.PersistMetadata(currentTerm, votedFor); err != nil {
 		return fmt.Errorf("failed to persist metadata: %w", err)
 	}
 
 	// Save all log entries
-	logEntries := node.state.GetLog()
+	logEntries := node.serverState.GetLog()
 	if len(logEntries) > 0 {
 		entries := make([]*LogEntry, len(logEntries))
 		for i := range logEntries {

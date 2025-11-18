@@ -1,6 +1,7 @@
 package raft
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/therealutkarshpriyadarshi/keyval/pkg/storage"
@@ -130,7 +131,7 @@ func (n *Node) SendSnapshotToFollower(peerID string, snapshot *storage.Snapshot)
 			Done:              done,
 		}
 
-		resp, err := client.InstallSnapshot(req)
+		resp, err := client.InstallSnapshot(context.Background(), req)
 		if err != nil {
 			return fmt.Errorf("failed to send snapshot chunk: %w", err)
 		}

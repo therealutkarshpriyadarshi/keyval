@@ -1,6 +1,7 @@
 package raft
 
 import (
+	"fmt"
 	"sync"
 	"time"
 )
@@ -289,6 +290,19 @@ func (c *ClusterConfig) GetPeers() []Peer {
 	peersCopy := make([]Peer, len(c.Peers))
 	copy(peersCopy, c.Peers)
 	return peersCopy
+}
+
+// GetPeer returns a peer by ID (thread-safe)
+func (c *ClusterConfig) GetPeer(id string) (Peer, error) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	for _, peer := range c.Peers {
+		if peer.ID == id {
+			return peer, nil
+		}
+	}
+	return Peer{}, fmt.Errorf("peer %s not found", id)
 }
 
 // ElectionState represents the state during an election

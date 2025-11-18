@@ -76,7 +76,7 @@ func (c *Client) Get(key string) ([]byte, error) {
 	}
 
 	if !resp.Success {
-		if resp.Error == ErrKeyNotFound {
+		if resp.Error == ErrCodeKeyNotFound {
 			return nil, fmt.Errorf("key not found: %s", key)
 		}
 		return nil, fmt.Errorf("get failed: %s", resp.Error)
@@ -177,7 +177,7 @@ func (c *Client) executeWithRetry(req *Request) (*Response, error) {
 		}
 
 		// Handle redirection
-		if !resp.Success && resp.Error == ErrNotLeader {
+		if !resp.Success && resp.Error == ErrCodeNotLeader {
 			// Update leader and retry
 			c.updateLeader(resp.LeaderID)
 			continue
@@ -210,7 +210,7 @@ func (c *Client) executeBatchWithRetry(req *BatchRequest) (*BatchResponse, error
 		}
 
 		// Handle redirection
-		if !resp.Success && resp.Error == ErrNotLeader {
+		if !resp.Success && resp.Error == ErrCodeNotLeader {
 			c.updateLeader(resp.LeaderID)
 			continue
 		}

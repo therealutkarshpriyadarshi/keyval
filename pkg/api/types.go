@@ -72,9 +72,9 @@ type Response struct {
 
 // Error codes
 const (
-	ErrNotLeader      = "not_leader"
-	ErrKeyNotFound    = "key_not_found"
-	ErrTimeout        = "timeout"
-	ErrInternalError  = "internal_error"
-	ErrInvalidRequest = "invalid_request"
+	ErrCodeNotLeader      = "not_leader"
+	ErrCodeKeyNotFound    = "key_not_found"
+	ErrCodeTimeout        = "timeout"
+	ErrCodeInternalError  = "internal_error"
+	ErrCodeInvalidRequest = "invalid_request"
 )
