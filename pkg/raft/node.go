@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/therealutkarshpriyadarshi/keyval/pkg/rpc"
+	"github.com/therealutkarshpriyadarshi/keyval/pkg/statemachine"
 )
 
 // Node represents a Raft node
@@ -44,6 +45,9 @@ type Node struct {
 	rpcServer   *rpc.Server
 	clientPool  *rpc.ClientPool
 
+	// State machine
+	stateMachine statemachine.StateMachine
+
 	// Channels for communication
 	stopCh chan struct{}
 
@@ -65,6 +69,13 @@ func WithLogger(logger *log.Logger) NodeOption {
 func WithConfig(config *Config) NodeOption {
 	return func(n *Node) {
 		n.config = config
+	}
+}
+
+// WithStateMachine sets a custom state machine for the node
+func WithStateMachine(sm statemachine.StateMachine) NodeOption {
+	return func(n *Node) {
+		n.stateMachine = sm
 	}
 }
 
@@ -91,6 +102,7 @@ func NewNode(id string, address string, peers []Peer, options ...NodeOption) (*N
 		config:        DefaultConfig(),
 		stopCh:        make(chan struct{}),
 		logger:        log.Default(),
+		stateMachine:  statemachine.NewKVStateMachine(), // Default state machine
 	}
 
 	// Apply options

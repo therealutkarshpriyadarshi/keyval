@@ -248,8 +248,7 @@ func (n *Node) processAppendEntries(req *raftpb.AppendEntriesRequest) *raftpb.Ap
 		n.volatileState.SetCommitIndex(newCommitIndex)
 
 		n.logger.Printf("[DEBUG] Updated commitIndex to %d", newCommitIndex)
-
-		// TODO: Apply committed entries to state machine (Week 4)
+		// Entries will be applied to state machine by the apply loop
 	}
 
 	resp.Success = true

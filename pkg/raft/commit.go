@@ -66,9 +66,6 @@ func (n *Node) tryAdvanceCommitIndex() {
 			n.volatileState.SetCommitIndex(N)
 			n.logger.Printf("[INFO] Advanced commitIndex to %d (majority match: %d)",
 				N, majorityMatchIndex)
-
-			// TODO: Trigger application of committed entries to state machine (Week 4)
-			// For now, just update the index
 			return
 		}
 	}
@@ -174,15 +171,22 @@ func (n *Node) applyCommittedEntries() {
 
 	// Apply entries from lastApplied+1 to commitIndex
 	for i := lastApplied + 1; i <= commitIndex; i++ {
-		_, err := n.getLogEntry(i)
+		entry, err := n.getLogEntry(i)
 		if err != nil {
 			n.logger.Printf("[ERROR] Failed to get log entry %d: %v", i, err)
 			break
 		}
 
-		// TODO: Apply to state machine (Week 4)
-		// For now, just log that we would apply it
-		n.logger.Printf("[DEBUG] Would apply entry %d to state machine (not implemented yet)", i)
+		// Apply to state machine (skip no-op entries)
+		if entry.Type != EntryNoOp && n.stateMachine != nil {
+			_, err := n.stateMachine.Apply(entry.Data)
+			if err != nil {
+				n.logger.Printf("[ERROR] Failed to apply entry %d to state machine: %v", i, err)
+				// Continue applying other entries even if one fails
+			} else {
+				n.logger.Printf("[DEBUG] Applied entry %d to state machine", i)
+			}
+		}
 
 		// Update last applied
 		n.volatileState.SetLastApplied(i)
