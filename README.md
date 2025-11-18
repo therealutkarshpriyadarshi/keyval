@@ -170,8 +170,9 @@ make bench
 
 ## 📖 Documentation
 
-- [Quick Start Guide](QUICK_START.md) - Get up and running
-- [Development Roadmap](ROADMAP.md) - Complete implementation plan
+- [Quick Start Guide](QUICK_START.md) - Get up and running quickly
+- [Development Roadmap](ROADMAP.md) - High-level 13-week implementation plan
+- [Development Plan](DEVELOPMENT_PLAN.md) - Detailed day-by-day task breakdown with checkboxes
 - [Architecture](docs/ARCHITECTURE.md) - System design details (coming soon)
 - [API Reference](docs/API.md) - Client API documentation (coming soon)
 
