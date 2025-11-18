@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/therealutkarshpriyadarshi/keyval/proto"
+	raftpb "github.com/therealutkarshpriyadarshi/keyval/proto"
 )
 
 // HeartbeatTimer manages the heartbeat timer for leaders

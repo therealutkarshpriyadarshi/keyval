@@ -467,3 +467,149 @@ func TestMembershipManager_FullWorkflow(t *testing.T) {
 		t.Error("node1 should be removed")
 	}
 }
+
+func TestMembershipManager_ReplaceNode(t *testing.T) {
+	members := map[string]string{
+		"node1": "localhost:5001",
+		"node2": "localhost:5002",
+		"node3": "localhost:5003",
+	}
+	mm := NewMembershipManager(members, 100)
+
+	// Initiate replacement
+	status, err := mm.ReplaceNode("node2", "node4", "localhost:5004")
+	if err != nil {
+		t.Fatalf("failed to initiate replace: %v", err)
+	}
+
+	if status.OldNodeID != "node2" {
+		t.Errorf("expected old node ID node2, got %s", status.OldNodeID)
+	}
+
+	if status.NewNodeID != "node4" {
+		t.Errorf("expected new node ID node4, got %s", status.NewNodeID)
+	}
+
+	if status.Phase != ReplacePhaseAddLearner {
+		t.Errorf("expected phase AddLearner, got %s", status.Phase)
+	}
+}
+
+func TestMembershipManager_ReplaceNode_OldNodeNotFound(t *testing.T) {
+	members := map[string]string{
+		"node1": "localhost:5001",
+		"node2": "localhost:5002",
+	}
+	mm := NewMembershipManager(members, 100)
+
+	// Try to replace non-existent node
+	_, err := mm.ReplaceNode("node99", "node4", "localhost:5004")
+	if err == nil {
+		t.Error("expected error when old node doesn't exist")
+	}
+}
+
+func TestMembershipManager_ReplaceNode_NewNodeExists(t *testing.T) {
+	members := map[string]string{
+		"node1": "localhost:5001",
+		"node2": "localhost:5002",
+	}
+	mm := NewMembershipManager(members, 100)
+
+	// Try to replace with existing node ID
+	_, err := mm.ReplaceNode("node1", "node2", "localhost:5003")
+	if err == nil {
+		t.Error("expected error when new node already exists")
+	}
+}
+
+func TestMembershipManager_GetReplaceNodeProgress(t *testing.T) {
+	members := map[string]string{
+		"node1": "localhost:5001",
+	}
+	mm := NewMembershipManager(members, 10)
+
+	// Test progress when new node not added yet
+	progress, err := mm.GetReplaceNodeProgress("node2")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if progress.Phase != ReplacePhaseAddLearner {
+		t.Errorf("expected phase AddLearner, got %s", progress.Phase)
+	}
+
+	if progress.LearnerAdded {
+		t.Error("learner should not be marked as added")
+	}
+
+	// Add as learner
+	mm.AddLearner("node2", "localhost:5002", 1, 1)
+	mm.CommitAddLearner("node2", 1, 1)
+
+	progress, err = mm.GetReplaceNodeProgress("node2")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if progress.Phase != ReplacePhaseCatchUp {
+		t.Errorf("expected phase CatchUp, got %s", progress.Phase)
+	}
+
+	if !progress.LearnerAdded {
+		t.Error("learner should be marked as added")
+	}
+
+	// Update progress to caught up
+	mm.UpdateLearnerProgress("node2", 95, 100, 1024)
+
+	progress, err = mm.GetReplaceNodeProgress("node2")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if progress.Phase != ReplacePhasePromote {
+		t.Errorf("expected phase Promote, got %s", progress.Phase)
+	}
+
+	if !progress.LearnerCaughtUp {
+		t.Error("learner should be marked as caught up")
+	}
+
+	// Promote to voter
+	mm.PromoteLearner("node2", 2, 1)
+	mm.CommitPromoteLearner("node2", 2, 1)
+
+	progress, err = mm.GetReplaceNodeProgress("node2")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if progress.Phase != ReplacePhaseRemoveOld {
+		t.Errorf("expected phase RemoveOld, got %s", progress.Phase)
+	}
+
+	if !progress.NewNodePromoted {
+		t.Error("new node should be marked as promoted")
+	}
+}
+
+func TestReplacePhase_String(t *testing.T) {
+	tests := []struct {
+		phase    ReplacePhase
+		expected string
+	}{
+		{ReplacePhaseAddLearner, "AddLearner"},
+		{ReplacePhaseCatchUp, "CatchUp"},
+		{ReplacePhasePromote, "Promote"},
+		{ReplacePhaseRemoveOld, "RemoveOld"},
+		{ReplacePhaseComplete, "Complete"},
+		{ReplacePhaseFailed, "Failed"},
+	}
+
+	for _, tt := range tests {
+		if tt.phase.String() != tt.expected {
+			t.Errorf("expected %s, got %s", tt.expected, tt.phase.String())
+		}
+	}
+}

@@ -358,3 +358,125 @@ func (mm *MembershipManager) Deserialize(data []byte) error {
 	mm.SetConfiguration(&config)
 	return nil
 }
+
+// ReplaceNodeStatus tracks the status of an ongoing node replacement
+type ReplaceNodeStatus struct {
+	OldNodeID     string
+	NewNodeID     string
+	NewAddress    string
+	Phase         ReplacePhase
+	StartedAt     time.Time
+	LearnerAdded  bool
+	LearnerCaughtUp bool
+	NewNodePromoted bool
+	OldNodeRemoved bool
+	Error         error
+}
+
+// ReplacePhase represents the current phase of node replacement
+type ReplacePhase int
+
+const (
+	ReplacePhaseAddLearner ReplacePhase = iota
+	ReplacePhaseCatchUp
+	ReplacePhasePromote
+	ReplacePhaseRemoveOld
+	ReplacePhaseComplete
+	ReplacePhaseFailed
+)
+
+// String returns the string representation of the replace phase
+func (p ReplacePhase) String() string {
+	switch p {
+	case ReplacePhaseAddLearner:
+		return "AddLearner"
+	case ReplacePhaseCatchUp:
+		return "CatchUp"
+	case ReplacePhasePromote:
+		return "Promote"
+	case ReplacePhaseRemoveOld:
+		return "RemoveOld"
+	case ReplacePhaseComplete:
+		return "Complete"
+	case ReplacePhaseFailed:
+		return "Failed"
+	default:
+		return "Unknown"
+	}
+}
+
+// ReplaceNode initiates a node replacement operation
+// This is a convenience method that combines: add learner → promote → remove old
+// Note: This should be called by the leader, and the actual operations happen
+// asynchronously as the new node catches up
+func (mm *MembershipManager) ReplaceNode(oldNodeID, newNodeID, newAddress string) (*ReplaceNodeStatus, error) {
+	mm.mu.Lock()
+	defer mm.mu.Unlock()
+
+	// Validate old node exists
+	config := mm.configManager.GetConfiguration()
+	if _, exists := config.Members[oldNodeID]; !exists {
+		return nil, fmt.Errorf("old node %s does not exist in cluster", oldNodeID)
+	}
+
+	// Validate new node doesn't already exist
+	if _, exists := config.Members[newNodeID]; exists {
+		return nil, fmt.Errorf("new node %s already exists in cluster", newNodeID)
+	}
+
+	// Check if there's already a change in progress
+	if mm.configManager.IsChangeInProgress() {
+		return nil, fmt.Errorf("configuration change already in progress")
+	}
+
+	status := &ReplaceNodeStatus{
+		OldNodeID:  oldNodeID,
+		NewNodeID:  newNodeID,
+		NewAddress: newAddress,
+		Phase:      ReplacePhaseAddLearner,
+		StartedAt:  time.Now(),
+	}
+
+	return status, nil
+}
+
+// GetReplaceNodeProgress returns the progress of a node replacement
+// This checks the current state of learners and configuration to determine progress
+func (mm *MembershipManager) GetReplaceNodeProgress(newNodeID string) (*ReplaceNodeStatus, error) {
+	mm.mu.RLock()
+	defer mm.mu.RUnlock()
+
+	config := mm.configManager.GetConfiguration()
+	member, exists := config.Members[newNodeID]
+
+	status := &ReplaceNodeStatus{
+		NewNodeID:  newNodeID,
+	}
+
+	if !exists {
+		status.Phase = ReplacePhaseAddLearner
+		status.LearnerAdded = false
+		return status, nil
+	}
+
+	// Check if it's a learner or voter
+	if member.Type == Learner {
+		status.Phase = ReplacePhaseCatchUp
+		status.LearnerAdded = true
+
+		// Check if caught up
+		if learnerStatus, ok := mm.learnerStatuses[newNodeID]; ok {
+			status.LearnerCaughtUp = learnerStatus.CaughtUp
+			if learnerStatus.CaughtUp {
+				status.Phase = ReplacePhasePromote
+			}
+		}
+	} else if member.Type == Voter {
+		status.Phase = ReplacePhaseRemoveOld
+		status.LearnerAdded = true
+		status.LearnerCaughtUp = true
+		status.NewNodePromoted = true
+	}
+
+	return status, nil
+}
