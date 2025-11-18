@@ -164,6 +164,32 @@ func (l *Log) IsEmpty() bool {
 	return len(l.entries) == 0
 }
 
+// TruncateBefore removes all entries before (and including) the given index
+// This is used for log compaction after creating a snapshot
+func (l *Log) TruncateBefore(index uint64) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if index == 0 {
+		// Nothing to truncate
+		return nil
+	}
+
+	// Find the position of the index
+	// Convert 1-indexed to 0-indexed
+	arrayIndex := int(index)
+
+	if arrayIndex >= len(l.entries) {
+		// Truncating everything
+		l.entries = make([]LogEntry, 0)
+		return nil
+	}
+
+	// Keep entries after the index
+	l.entries = l.entries[arrayIndex:]
+	return nil
+}
+
 // TruncateAfter removes all entries after the given index (exclusive)
 // This is used when resolving log conflicts
 func (l *Log) TruncateAfter(index uint64) error {
