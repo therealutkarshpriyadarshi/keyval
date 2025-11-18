@@ -6,7 +6,7 @@ import (
 	"net"
 	"sync"
 
-	"github.com/therealutkarshpriyadarshi/keyval/proto"
+	raftpb "github.com/therealutkarshpriyadarshi/keyval/proto"
 	"google.golang.org/grpc"
 )
 

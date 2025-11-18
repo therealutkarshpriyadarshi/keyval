@@ -17,19 +17,11 @@ type Server struct {
 	raftNode *raft.Node
 	logger   *log.Logger
 
-	// Request deduplication
-	sessions map[string]*ClientSession
+	// Session manager for request deduplication
+	sessionManager *SessionManager
 
 	// Default timeout for operations
 	defaultTimeout time.Duration
-}
-
-// ClientSession tracks client request history for deduplication
-type ClientSession struct {
-	mu              sync.RWMutex
-	lastSequence    uint64
-	lastResponse    *Response
-	lastRequestTime time.Time
 }
 
 // NewServer creates a new API server
@@ -37,8 +29,15 @@ func NewServer(raftNode *raft.Node) *Server {
 	return &Server{
 		raftNode:       raftNode,
 		logger:         log.Default(),
-		sessions:       make(map[string]*ClientSession),
+		sessionManager: NewSessionManager(10 * time.Minute), // 10 minute session timeout
 		defaultTimeout: 5 * time.Second,
+	}
+}
+
+// Stop gracefully shuts down the server
+func (s *Server) Stop() {
+	if s.sessionManager != nil {
+		s.sessionManager.Stop()
 	}
 }
 
@@ -53,9 +52,12 @@ func (s *Server) HandleRequest(req *Request) *Response {
 	}
 
 	// Check for duplicate request (idempotency)
-	if cached := s.checkDuplicate(req); cached != nil {
-		s.logger.Printf("[DEBUG] Returning cached response for request %s", req.ID)
-		return cached
+	if req.ClientID != "" && req.Sequence > 0 {
+		if cached, isDup := s.sessionManager.CheckDuplicate(req.ClientID, req.Sequence); isDup {
+			s.logger.Printf("[DEBUG] Returning cached response for request %s (client=%s, seq=%d)",
+				req.ID, req.ClientID, req.Sequence)
+			return cached
+		}
 	}
 
 	// Route based on operation type
@@ -75,8 +77,8 @@ func (s *Server) HandleRequest(req *Request) *Response {
 	}
 
 	// Cache response for deduplication
-	if req.ClientID != "" {
-		s.cacheResponse(req, resp)
+	if req.ClientID != "" && req.Sequence > 0 {
+		s.sessionManager.CacheResponse(req.ClientID, req.Sequence, resp)
 	}
 
 	return resp
@@ -226,54 +228,6 @@ func (s *Server) validateRequest(req *Request) error {
 	return nil
 }
 
-// checkDuplicate checks if this request has already been processed
-func (s *Server) checkDuplicate(req *Request) *Response {
-	if req.ClientID == "" {
-		return nil
-	}
-
-	s.mu.RLock()
-	session, exists := s.sessions[req.ClientID]
-	s.mu.RUnlock()
-
-	if !exists {
-		return nil
-	}
-
-	session.mu.RLock()
-	defer session.mu.RUnlock()
-
-	// If we've seen this sequence number, return cached response
-	if req.Sequence <= session.lastSequence {
-		return session.lastResponse
-	}
-
-	return nil
-}
-
-// cacheResponse caches a response for deduplication
-func (s *Server) cacheResponse(req *Request, resp *Response) {
-	if req.ClientID == "" {
-		return
-	}
-
-	s.mu.Lock()
-	session, exists := s.sessions[req.ClientID]
-	if !exists {
-		session = &ClientSession{}
-		s.sessions[req.ClientID] = session
-	}
-	s.mu.Unlock()
-
-	session.mu.Lock()
-	defer session.mu.Unlock()
-
-	if req.Sequence > session.lastSequence {
-		session.lastSequence = req.Sequence
-		session.lastResponse = resp
-		session.lastRequestTime = time.Now()
-	}
-}
 
 // redirectToLeader returns a response indicating the client should redirect to the leader
 func (s *Server) redirectToLeader() *Response {
@@ -324,19 +278,7 @@ func (s *Server) getFromStateMachine(key string) ([]byte, bool) {
 	return value, exists
 }
 
-// CleanupSessions removes old client sessions
-func (s *Server) CleanupSessions(maxAge time.Duration) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	now := time.Now()
-	for clientID, session := range s.sessions {
-		session.mu.RLock()
-		age := now.Sub(session.lastRequestTime)
-		session.mu.RUnlock()
-
-		if age > maxAge {
-			delete(s.sessions, clientID)
-		}
-	}
+// GetSessionCount returns the number of active sessions
+func (s *Server) GetSessionCount() int {
+	return s.sessionManager.SessionCount()
 }

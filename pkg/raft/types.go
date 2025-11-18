@@ -56,6 +56,8 @@ const (
 	EntryConfig
 	// EntryNoOp is a no-op entry (used by leaders on election)
 	EntryNoOp
+	// EntryBatch is a batch of commands
+	EntryBatch
 )
 
 // ServerState represents the persistent state on all servers
