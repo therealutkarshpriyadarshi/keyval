@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/therealutkarshpriyadarshi/keyval/proto"
+	raftpb "github.com/therealutkarshpriyadarshi/keyval/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

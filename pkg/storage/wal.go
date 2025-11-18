@@ -204,9 +204,9 @@ func (w *FileWAL) Truncate(index uint64) error {
 	}
 
 	// Remove all segments
-	segments, err := w.listSegments()
-	if err != nil {
-		return err
+	segments, listErr := w.listSegments()
+	if listErr != nil {
+		return listErr
 	}
 
 	for _, segIdx := range segments {
