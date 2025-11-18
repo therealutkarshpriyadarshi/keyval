@@ -37,18 +37,18 @@
 
 ---
 
-## Week 2: Core Raft Structures & Leader Election (Part 1)
+## Week 2: Core Raft Structures & Leader Election (Part 1) ✅
 
 ### Day 1: Protocol Buffers & RPC Definitions
-- [ ] Create `proto/raft.proto`
-  - [ ] Define RequestVote RPC
-  - [ ] Define AppendEntries RPC (structure only)
-  - [ ] Define InstallSnapshot RPC (structure only)
-  - [ ] Define common types (LogEntry, etc.)
-- [ ] Generate Go code from protobuf
-  - [ ] Run `make proto`
-  - [ ] Verify generated files
-- [ ] Create `pkg/rpc/client.go` and `pkg/rpc/server.go` stubs
+- [x] Create `proto/raft.proto`
+  - [x] Define RequestVote RPC
+  - [x] Define AppendEntries RPC (structure only)
+  - [x] Define InstallSnapshot RPC (structure only)
+  - [x] Define common types (LogEntry, etc.)
+- [x] Generate Go code from protobuf
+  - [x] Run `make proto`
+  - [x] Verify generated files
+- [x] Create `pkg/rpc/client.go` and `pkg/rpc/server.go` stubs
 
 **Files to create:**
 ```
@@ -58,17 +58,17 @@ pkg/rpc/server.go
 ```
 
 ### Day 2: Core Data Structures
-- [ ] Create `pkg/raft/types.go`
-  - [ ] Define NodeState enum (Follower, Candidate, Leader)
-  - [ ] Define LogEntry struct
-  - [ ] Define ServerState (persistent)
-  - [ ] Define VolatileState
-  - [ ] Define LeaderState
-- [ ] Create `pkg/raft/config.go`
-  - [ ] Election timeout range (150-300ms)
-  - [ ] Heartbeat interval (50ms)
-  - [ ] Other configuration parameters
-- [ ] Add unit tests for data structures
+- [x] Create `pkg/raft/types.go`
+  - [x] Define NodeState enum (Follower, Candidate, Leader)
+  - [x] Define LogEntry struct
+  - [x] Define ServerState (persistent)
+  - [x] Define VolatileState
+  - [x] Define LeaderState
+- [x] Create `pkg/raft/config.go`
+  - [x] Election timeout range (150-300ms)
+  - [x] Heartbeat interval (50ms)
+  - [x] Other configuration parameters
+- [x] Add unit tests for data structures
 
 **Files to create:**
 ```
@@ -78,16 +78,16 @@ pkg/raft/types_test.go
 ```
 
 ### Day 3: Node Structure
-- [ ] Create `pkg/raft/node.go`
-  - [ ] Define Node struct with all state
-  - [ ] Implement NewNode() constructor
-  - [ ] Add mutex for thread safety
-  - [ ] Implement state getters/setters
-  - [ ] Add term management functions
-- [ ] Create `pkg/raft/node_test.go`
-  - [ ] Test node creation
-  - [ ] Test state transitions
-  - [ ] Test thread safety
+- [x] Create `pkg/raft/node.go`
+  - [x] Define Node struct with all state
+  - [x] Implement NewNode() constructor
+  - [x] Add mutex for thread safety
+  - [x] Implement state getters/setters
+  - [x] Add term management functions
+- [x] Create `pkg/raft/node_test.go`
+  - [x] Test node creation
+  - [x] Test state transitions
+  - [x] Test thread safety
 
 **Files to create:**
 ```
@@ -96,15 +96,15 @@ pkg/raft/node_test.go
 ```
 
 ### Day 4: Election Timer
-- [ ] Create `pkg/raft/timer.go`
-  - [ ] Implement randomized election timeout
-  - [ ] Create timer reset mechanism
-  - [ ] Add timer stop/start functions
-  - [ ] Make it thread-safe
-- [ ] Create `pkg/raft/timer_test.go`
-  - [ ] Test timeout randomization
-  - [ ] Test reset behavior
-  - [ ] Test concurrent access
+- [x] Create `pkg/raft/timer.go`
+  - [x] Implement randomized election timeout
+  - [x] Create timer reset mechanism
+  - [x] Add timer stop/start functions
+  - [x] Make it thread-safe
+- [x] Create `pkg/raft/timer_test.go`
+  - [x] Test timeout randomization
+  - [x] Test reset behavior
+  - [x] Test concurrent access
 
 **Files to create:**
 ```
@@ -113,15 +113,15 @@ pkg/raft/timer_test.go
 ```
 
 ### Day 5: RequestVote RPC - Requester Side
-- [ ] Create `pkg/raft/election.go`
-  - [ ] Implement startElection() function
-  - [ ] Increment term
-  - [ ] Vote for self
-  - [ ] Send RequestVote to all peers
-  - [ ] Collect votes
-  - [ ] Handle majority wins
-- [ ] Add election state management
-- [ ] Write unit tests
+- [x] Create `pkg/raft/election.go`
+  - [x] Implement startElection() function
+  - [x] Increment term
+  - [x] Vote for self
+  - [x] Send RequestVote to all peers
+  - [x] Collect votes
+  - [x] Handle majority wins
+- [x] Add election state management
+- [x] Write unit tests
 
 **Files to create:**
 ```
@@ -130,19 +130,19 @@ pkg/raft/election_test.go
 ```
 
 ### Day 6-7: RequestVote RPC - Handler Side & Integration
-- [ ] Implement RequestVote handler
-  - [ ] Check term comparison
-  - [ ] Check votedFor state
-  - [ ] Check log up-to-date (prepare for later)
-  - [ ] Grant/deny vote
-  - [ ] Reset election timer on valid request
-- [ ] Integrate with Node
-- [ ] Write comprehensive tests
-  - [ ] Single node election
-  - [ ] Three node election
-  - [ ] Five node election
-  - [ ] Split vote scenarios
-  - [ ] Concurrent candidates
+- [x] Implement RequestVote handler
+  - [x] Check term comparison
+  - [x] Check votedFor state
+  - [x] Check log up-to-date (prepare for later)
+  - [x] Grant/deny vote
+  - [x] Reset election timer on valid request
+- [x] Integrate with Node
+- [x] Write comprehensive tests
+  - [x] Single node election
+  - [x] Three node election
+  - [x] Five node election
+  - [ ] Split vote scenarios (Week 3)
+  - [ ] Concurrent candidates (Week 3)
 
 **Files to update:**
 ```
@@ -151,11 +151,12 @@ pkg/raft/rpc_handlers.go (new)
 pkg/raft/election_test.go
 ```
 
-**Week 2 Deliverables:**
-- RequestVote RPC fully implemented
-- Election timer working
-- Basic leader election (without log comparison)
-- Comprehensive unit tests
+**Week 2 Deliverables:** ✅
+- RequestVote RPC fully implemented ✅
+- Election timer working ✅
+- Basic leader election (with log comparison foundation) ✅
+- Comprehensive unit tests ✅
+- Integration tests for multi-node elections ✅
 
 ---
 
