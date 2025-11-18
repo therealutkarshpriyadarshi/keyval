@@ -269,11 +269,11 @@ func TestWAL_SegmentRotation(t *testing.T) {
 	defer wal.Close()
 
 	// Set small segment size for testing
-	wal.segmentSize = 1024 // 1KB
+	wal.segmentSize = 512 // 512 bytes
 
 	// Append entries that exceed segment size
-	largeData := make([]byte, 500) // 500 bytes per entry
-	for i := 1; i <= 5; i++ {
+	largeData := make([]byte, 400) // 400 bytes per entry
+	for i := 1; i <= 10; i++ {
 		entry := &WALEntry{
 			Type:  WALEntryLog,
 			Index: uint64(i),

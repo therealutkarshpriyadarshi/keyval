@@ -153,6 +153,12 @@ func (sm *SnapshotManager) List() ([]*SnapshotMetadata, error) {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
+	return sm.listSnapshots()
+}
+
+// listSnapshots is an internal method that lists snapshots without acquiring locks
+// Must be called with lock held
+func (sm *SnapshotManager) listSnapshots() ([]*SnapshotMetadata, error) {
 	entries, err := os.ReadDir(sm.dir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read snapshot directory: %w", err)
@@ -281,8 +287,9 @@ func (sm *SnapshotManager) loadLatestMetadata() error {
 }
 
 // cleanupOldSnapshots removes old snapshots, keeping only the most recent ones
+// Must be called with lock held
 func (sm *SnapshotManager) cleanupOldSnapshots() error {
-	snapshots, err := sm.List()
+	snapshots, err := sm.listSnapshots()
 	if err != nil {
 		return err
 	}

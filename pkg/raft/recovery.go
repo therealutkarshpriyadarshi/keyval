@@ -60,7 +60,7 @@ func (r *RecoveryManager) RecoverState(node *Node) error {
 
 	if snapshot != nil {
 		log.Printf("Found snapshot: lastIncludedIndex=%d, lastIncludedTerm=%d",
-			snapshot.LastIncludedIndex, snapshot.LastIncludedTerm)
+			snapshot.Index, snapshot.Term)
 
 		// Validate snapshot
 		if err := r.validateSnapshot(snapshot); err != nil {
@@ -84,7 +84,7 @@ func (r *RecoveryManager) RecoverState(node *Node) error {
 
 // validateSnapshot validates snapshot metadata
 func (r *RecoveryManager) validateSnapshot(snapshot *storage.SnapshotMetadata) error {
-	if snapshot.LastIncludedIndex == 0 {
+	if snapshot.Index == 0 {
 		return fmt.Errorf("invalid snapshot: lastIncludedIndex is 0")
 	}
 
