@@ -28,50 +28,23 @@ func (n *Node) HandleRequestVote(ctx context.Context, req *raftpb.RequestVoteReq
 // HandleAppendEntries handles AppendEntries RPC
 // This is called by the RPC server when an AppendEntries RPC is received
 func (n *Node) HandleAppendEntries(ctx context.Context, req *raftpb.AppendEntriesRequest) (*raftpb.AppendEntriesResponse, error) {
-	n.mu.Lock()
-	defer n.mu.Unlock()
-
-	currentTerm := n.serverState.GetCurrentTerm()
-	resp := &raftpb.AppendEntriesResponse{
-		Term:    currentTerm,
-		Success: false,
+	// Validate request
+	if req == nil {
+		return &raftpb.AppendEntriesResponse{
+			Term:    n.GetCurrentTerm(),
+			Success: false,
+		}, nil
 	}
 
-	// If request term is less than current term, reject
-	if req.Term < currentTerm {
-		n.logger.Printf("[DEBUG] Rejecting AppendEntries from %s: request term %d < current term %d",
-			req.LeaderId, req.Term, currentTerm)
-		return resp, nil
-	}
+	// Process the AppendEntries request
+	resp := n.processAppendEntries(req)
 
-	// If request term is greater than or equal to current term, update term and step down
-	if req.Term >= currentTerm {
-		if req.Term > currentTerm {
-			n.stepDown(req.Term)
-			currentTerm = req.Term
-			resp.Term = currentTerm
-		}
-
-		// If we're a candidate, step down to follower
-		if n.state == Candidate {
-			n.setState(Follower)
-		}
-
-		// Reset election timer since we received a message from the leader
-		n.electionTimer.Reset()
-	}
-
-	// For now, accept empty heartbeats
-	// Full log replication will be implemented in week 3
 	if len(req.Entries) == 0 {
-		resp.Success = true
 		n.logger.Printf("[DEBUG] Received heartbeat from leader %s for term %d", req.LeaderId, req.Term)
-		return resp, nil
+	} else {
+		n.logger.Printf("[DEBUG] Received AppendEntries from leader %s with %d entries", req.LeaderId, len(req.Entries))
 	}
 
-	// TODO: Implement log replication logic (Week 3)
-	// For now, just reject entries
-	resp.Success = false
 	return resp, nil
 }
 
