@@ -22,12 +22,13 @@ const (
 
 // FileWAL is a file-based implementation of the WAL interface
 type FileWAL struct {
-	dir          string
-	mu           sync.RWMutex
-	currentFile  *os.File
-	currentIndex uint64
-	writer       *bufio.Writer
-	segmentSize  int64
+	dir           string
+	mu            sync.RWMutex
+	currentFile   *os.File
+	currentIndex  uint64
+	writer        *bufio.Writer
+	segmentSize   int64
+	currentSize   int64 // Track current segment size in memory
 }
 
 // NewWAL creates a new write-ahead log
@@ -106,9 +107,13 @@ func (w *FileWAL) appendEntry(entry *WALEntry) error {
 	}
 
 	// Write the entry
-	if _, err := w.writer.Write(data); err != nil {
+	n, err := w.writer.Write(data)
+	if err != nil {
 		return fmt.Errorf("failed to write entry: %w", err)
 	}
+
+	// Update current size
+	w.currentSize += int64(n)
 
 	return nil
 }
@@ -245,12 +250,7 @@ func (w *FileWAL) shouldRotate(nextEntrySize int64) bool {
 		return false
 	}
 
-	info, err := w.currentFile.Stat()
-	if err != nil {
-		return false
-	}
-
-	return info.Size()+nextEntrySize > w.segmentSize
+	return w.currentSize+nextEntrySize > w.segmentSize
 }
 
 func (w *FileWAL) rotateSegment() error {
@@ -259,6 +259,7 @@ func (w *FileWAL) rotateSegment() error {
 	}
 
 	w.currentIndex++
+	w.currentSize = 0 // Reset size for new segment
 	return w.createSegment(w.currentIndex)
 }
 
@@ -272,6 +273,7 @@ func (w *FileWAL) createSegment(index uint64) error {
 	w.currentFile = file
 	w.currentIndex = index
 	w.writer = bufio.NewWriter(file)
+	w.currentSize = 0
 
 	return nil
 }
@@ -283,9 +285,17 @@ func (w *FileWAL) openSegment(index uint64) error {
 		return fmt.Errorf("failed to open segment: %w", err)
 	}
 
+	// Get current file size
+	info, err := file.Stat()
+	if err != nil {
+		file.Close()
+		return fmt.Errorf("failed to stat segment: %w", err)
+	}
+
 	w.currentFile = file
 	w.currentIndex = index
 	w.writer = bufio.NewWriter(file)
+	w.currentSize = info.Size()
 
 	return nil
 }
